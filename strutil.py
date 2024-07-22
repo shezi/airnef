@@ -13,8 +13,6 @@
 
 from __future__ import print_function
 from __future__ import division
-import six
-from six.moves import xrange
 import struct
 from applog import *
 import sys
@@ -32,19 +30,19 @@ def hexByteFromData(data):
 	return hexByte(byte)
 def hexShortFromData(data):
 	(short,)=struct.unpack('H',data[:2])
-	return hexShort(short)	
+	return hexShort(short)
 def hexWordFromData(data):
 	(word,)=struct.unpack('I',data[:4])
-	return hexWord(word)	
+	return hexWord(word)
 
 #
 # inverts the endianness of a scalar (integer) value
-# 	
+#
 def invertEndian(scalar):
 
 	# first convert scalar to a byte array
 	bytesPacked = struct.pack('=Q', scalar)
-	
+
 	#
 	# now unpack and invert endian by specifying struct.unpack()
 	# endian that is opposite of the native endian for the platform
@@ -67,7 +65,7 @@ def invertEndian(scalar):
 def stringToUtf16ByteArray(str, fNullTerminated=False):
 	packedUtf16 = bytearray()
 	strAsBytes = bytearray(str, 'utf-8')
-	for i in xrange(len(str)):
+	for i in range(len(str)):
 		packedUtf16 += struct.pack('<BB', strAsBytes[i], 0x00)
 	if fNullTerminated:
 		packedUtf16 += struct.pack('<BB', 0x00, 0x00)
@@ -77,16 +75,16 @@ def stringToUtf16ByteArray(str, fNullTerminated=False):
 # converts a string into a "counted" utf-16 byte array,
 # where the first byte of the array is the characters
 # count of the array including an optional null
-#	
+#
 def stringToCountedUtf16(str, fNullTerminated=False):
 	return struct.pack('<B', len(str) + (1 if fNullTerminated else 0)) + stringToUtf16ByteArray(str, fNullTerminated)
-	
+
 
 #
 # returns a date/time string in mm/dd/yy hh:mm:ss format for specified
 # epoch time - if epoch time is None then returns date/time string for
 # current time
-#	
+#
 def getDateTimeStr(timeEpoch=None, fMilitaryTime=False):
 	if timeEpoch == None:
 		timeEpoch = time.time()
@@ -96,7 +94,7 @@ def getDateTimeStr(timeEpoch=None, fMilitaryTime=False):
 	else:
 		timeStr = time.strftime("%m/%d/%y %H:%M:%S", timeStruct)
 	return timeStr
-	
+
 
 #
 # Generates string containing hex dump of a bytearray. Format is:
@@ -125,9 +123,9 @@ def hexdump(data, bytesPerField=1, includeASCII=1):
 	if (len(data) % bytesPerField) != 0:
 		applog_w("hexdump: size of data (0x{:04x}) is not a multiple of bytesPerField ({:d})".format(len(data), bytesPerField))
 		return strHexDump
-	for offset in xrange(0,len(data),bytesPerField):
+	for offset in range(0,len(data),bytesPerField):
 		offsetThisFieldInLine = (offset % 16)	# byte offset into data for this field of current line
-		endingOffsetThisFieldInLine = offsetThisFieldInLine + bytesPerField		
+		endingOffsetThisFieldInLine = offsetThisFieldInLine + bytesPerField
 		if (offsetThisFieldInLine == 0):
 			strHexDump += "{:04x}: ".format(offset)
 		(thisField,) = struct.unpack(bytesPerFieldToUnpackStr[bytesPerField], data[offset:offset+bytesPerField])
@@ -146,7 +144,7 @@ def hexdump(data, bytesPerField=1, includeASCII=1):
 					# values before start ASCII dump seciton
 					fieldsNotPrintedInFinalLine = (16-endingOffsetThisFieldInLine) * bytesPerField
 					charactersPerFieldIncludingSpace = bytesPerField*2 + 1
-					strHexDump += " " * (fieldsNotPrintedInFinalLine*charactersPerFieldIncludingSpace) # add spaces for each missing field				
+					strHexDump += " " * (fieldsNotPrintedInFinalLine*charactersPerFieldIncludingSpace) # add spaces for each missing field
 					if (endingOffsetThisFieldInLine < 8):
 						strHexDump += "  "								# add spaces for missing middle separator
 				for asciiOffset in range(offsetThisFieldInLine+1):
@@ -160,4 +158,3 @@ def hexdump(data, bytesPerField=1, includeASCII=1):
 			if not bIsFinalLine:	# don't put newline after final line
 				strHexDump += "\n"
 	return strHexDump
-		

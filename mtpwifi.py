@@ -21,7 +21,6 @@
 
 from __future__ import print_function
 from __future__ import division
-import six
 import socket
 import sys
 import struct
@@ -65,7 +64,7 @@ MTP_TCPIP_CmdReq_DataDir_HostToCamera = 0x2			# data direction is Host -> Camera
 MtpTcpCmdResult = namedtuple('MTPTcpCmdResult', 'mtpRespCode mtpResponseParameter dataReceived')
 
 #
-# exceptions thrown by our methods. 
+# exceptions thrown by our methods.
 #
 class MtpOpExecFailureException(Exception):
 	def __init__(self, mtpRespCode, message, partialData=None, totalPayloadSizeIndicated=None):
@@ -73,11 +72,11 @@ class MtpOpExecFailureException(Exception):
 		self.mtpRespCode = mtpRespCode
 		self.partialData = partialData
 		self.totalPayloadSizeIndicated = totalPayloadSizeIndicated
-		
+
 class MtpProtocolException(Exception):
 	def __init__(self, message):
 		Exception.__init__(self, message)
-			
+
 class MtpConnectionFailureException(Exception):
 	def __init__(self, message):
 		Exception.__init__(self, message)
@@ -108,7 +107,7 @@ def txdata(s, data):
 	if isDebugLog():
 		applog_d(strutil.hexdump(data[:min(len(data),1024)]))
 	s.send(struct.pack('<I',len(data)+4)+data)
-	
+
 #
 # Receives a payload over a MTP-TCP/IP socket
 #
@@ -119,11 +118,11 @@ def rxPayload(s, rxProgressFunc=None):
 	totalPayloadBytes = 0			# need to initialize here in case exception occurs before var is set
 	payloadBytesReceived = 0		# need to initialize here in case exception occurs before var is set
 	payloadId = None
-	data = six.binary_type()
+	data = b''
 	g_PartialRxDataPayloadData = None
 	g_PartialRxDataPayloadData_SizeIndicated = 0
 	try:
-	
+
 		# transmitter first sends word indicating size of payload to follow
 		dataPreamble = s.recv(4)
 		if len(dataPreamble) < 4:
@@ -132,7 +131,7 @@ def rxPayload(s, rxProgressFunc=None):
 		totalPayloadBytes = totalBytesIncludingPreamble-4
 
 		# receive the payload
-		while (payloadBytesReceived < totalPayloadBytes):		
+		while (payloadBytesReceived < totalPayloadBytes):
 			data += s.recv(totalPayloadBytes - payloadBytesReceived)
 			if not payloadId and len(data) >= 4:
 				# if we have not received the payload ID and we have at least 4 bytes of data (first four bytes has payload ID)
@@ -140,7 +139,7 @@ def rxPayload(s, rxProgressFunc=None):
 			payloadBytesReceived = len(data)
 			if rxProgressFunc and payloadBytesReceived >= 8 and (payloadId == MTP_TCPIP_PAYLOAD_ID_DataPayload or payloadId == MTP_TCPIP_PAYLOAD_ID_DataPayloadLast):
 				rxProgressFunc(payloadBytesReceived - 8) # -8 to exclude header data from count
-				
+
 		# return the data received [not including 4-byte size preamble]
 		return data
 	except socket.error as error:
@@ -154,14 +153,14 @@ def rxPayload(s, rxProgressFunc=None):
 			g_PartialRxDataPayloadData_SizeIndicated = totalPayloadBytes
 		raise # let upper levels print out contents of actual socket.error exception
 
-		
+
 #
 # Transmits request and receives response payload(s)
 #
 def txrxdata(s, data):
 	txdata(s, data)
 	return rxPayload(s)
-	
+
 
 #
 # perform an MTP operation/command
@@ -217,14 +216,14 @@ def execMtpOp_rxPayloadProgressFunc(totalBytesReceivedThisPayload, rxTxProgressF
 		rxTxProgressFunc(countBytesReceivedAcrossAllPayloads + totalBytesReceivedThisPayload,
 			totalDataTransferSizeBytesExpectedAcrossAllPayloads)
 
-def execMtpOp(s, mtpOp, cmdArgsPacked=six.binary_type(), dataToSend=six.binary_type(), rxTxProgressFunc=None):
+def execMtpOp(s, mtpOp, cmdArgsPacked=b'', dataToSend=b'', rxTxProgressFunc=None):
 
 	mtpDataDirToCmdReqDataDirectionCode={
 		MTP_DATA_DIRECTION_NONE : MTP_TCPIP_CmdReq_DataDir_CameraToHost_or_None,
 		MTP_DATA_DIRECTION_CAMERA_TO_HOST : MTP_TCPIP_CmdReq_DataDir_CameraToHost_or_None,
 		MTP_DATA_DIRECTION_HOST_TO_CAMERA : MTP_TCPIP_CmdReq_DataDir_HostToCamera,
 	}
-	
+
 	global gTransferInterruptedBySIGINT
 	if gTransferInterruptedBySIGINT:
 		#
@@ -233,7 +232,7 @@ def execMtpOp(s, mtpOp, cmdArgsPacked=six.binary_type(), dataToSend=six.binary_t
 		#
 		raise MtpProtocolException("Previous transfer interrupted - session in unknown state")
 
-	dataReceivedSoFar = six.binary_type()
+	dataReceivedSoFar = b''
 	dataDirection = getMtpOpDataDirection(mtpOp)
 
 	#
@@ -243,7 +242,7 @@ def execMtpOp(s, mtpOp, cmdArgsPacked=six.binary_type(), dataToSend=six.binary_t
 	theCmdReq = struct.pack('<IIHI', MTP_TCPIP_PAYLOAD_ID_CmdReq, mtpDataDirToCmdReqDataDirectionCode[dataDirection], mtpOp, txTransactionId) + cmdArgsPacked
 	applog_d("execMtpOp: {:s} - CmdReq payload:".format(getMtpOpDesc(mtpOp)))
 	txdata(s, theCmdReq)
-	
+
 	#
 	# if this MTP op has Host -> Camera data ,send it now
 	#
@@ -252,37 +251,37 @@ def execMtpOp(s, mtpOp, cmdArgsPacked=six.binary_type(), dataToSend=six.binary_t
 		txdata(s, struct.pack('<IIII', MTP_TCPIP_PAYLOAD_ID_DataStart, txTransactionId, len(dataToSend), 0))
 		applog_d("execMtpOp: Sending MTP_TCPIP_PAYLOAD_ID_DataPayloadLast:")
 		txdata(s, struct.pack('<II', MTP_TCPIP_PAYLOAD_ID_DataPayloadLast, txTransactionId) + dataToSend)
-			
+
 	#
 	# loop, processing inbound data payloads (MTP_DATA_DIRECTION_CAMERA_TO_HOST) and
 	# the final cmd-response payload
 	#
 	totalDataTransferSizeBytesExpectedAcrossAllPayloads = 0
 	while True:
-	
+
 		try:
-	
-			data = rxPayload(s, lambda totalBytesReceivedThisPayload : execMtpOp_rxPayloadProgressFunc(totalBytesReceivedThisPayload, 
+
+			data = rxPayload(s, lambda totalBytesReceivedThisPayload : execMtpOp_rxPayloadProgressFunc(totalBytesReceivedThisPayload,
 				rxTxProgressFunc, len(dataReceivedSoFar), totalDataTransferSizeBytesExpectedAcrossAllPayloads))
 			(payloadId,) = struct.unpack('<I', data[0:4])
-			
+
 			if payloadId == MTP_TCPIP_PAYLOAD_ID_DataStart:
-			
+
 				if dataDirection != MTP_DATA_DIRECTION_CAMERA_TO_HOST:
 					raise MtpProtocolException("Camera Protocol Error: {:s}: Received unexpected MTP_TCPIP_PAYLOAD_ID_DataStart for non-inbound transfer".\
 						format(getMtpOpDesc(mtpOp)))
-			
+
 				# process MTP_TCPIP_PAYLOAD_ID_DataStart
 				(rxTransactionId,) = struct.unpack('<I', data[4:8])
 				if rxTransactionId != txTransactionId:
 					raise MtpProtocolException("Camera Protocol Error: {:s}: Incorrect transaction ID for MTP_TCPIP_PAYLOAD_ID_DataStart (exp={:08x}, got={:08x})".\
 						format(getMtpOpDesc(mtpOp), txTransactionId, rxTransactionId))
-				(totalDataTransferSizeBytesExpectedAcrossAllPayloads,) = struct.unpack('<I', data[8:12])				
-				
+				(totalDataTransferSizeBytesExpectedAcrossAllPayloads,) = struct.unpack('<I', data[8:12])
+
 				# debug dump of DataStart payload
 				if isDebugLog():
 					applog_d("execMtpOp: {:s} - DataStart payload [expected data bytes is 0x{:x}]".format(getMtpOpDesc(mtpOp), totalDataTransferSizeBytesExpectedAcrossAllPayloads))
-					applog_d(strutil.hexdump(data))	
+					applog_d(strutil.hexdump(data))
 
 			elif payloadId == MTP_TCPIP_PAYLOAD_ID_DataPayload or payloadId == MTP_TCPIP_PAYLOAD_ID_DataPayloadLast:
 
@@ -297,27 +296,27 @@ def execMtpOp(s, mtpOp, cmdArgsPacked=six.binary_type(), dataToSend=six.binary_t
 				(rxTransactionId,) = struct.unpack('<I', data[4:8])
 				if rxTransactionId != txTransactionId:
 					raise MtpProtocolException("Camera Protocol Error: {:s}: Incorrect transaction ID for data payload (exp={:08x}, got={:08x})".format(\
-						getMtpOpDesc(mtpOp), txTransactionId, rxTransactionId))				
-				
-				dataReceivedSoFar += data[8:]				
-					
+						getMtpOpDesc(mtpOp), txTransactionId, rxTransactionId))
+
+				dataReceivedSoFar += data[8:]
+
 			elif payloadId == MTP_TCPIP_PAYLOAD_ID_CmdResponse:
-					
+
 				(mtpRespCode, rxTransactionId) = struct.unpack('<HI', data[4:10])
 				if rxTransactionId != txTransactionId:
 					raise MtpProtocolException("Camera Protocol Error: {:s}: Incorrect transaction ID for MTP_TCPIP_PAYLOAD_ID_CmdResponse (exp={:08x}, got={:08x})".\
 						format(getMtpOpDesc(mtpOp), txTransactionId, rxTransactionId))
 
-				if len(data)>=14:				
+				if len(data)>=14:
 					(mtpResponseParameter,)=struct.unpack('<I', data[10:14])
 				else:
 					mtpResponseParameter = None
-					
+
 				# debug dump of CmdResonse payload
 				if isDebugLog():
 					applog_d("execMtpOp: {:s} - CmdResponse payload (resp=\"{:s}\"):".format(getMtpOpDesc(mtpOp), getMtpRespDesc(mtpRespCode)))
 					applog_d(strutil.hexdump(data))
-				
+
 				if mtpRespCode != MTP_RESP_Ok:
 					raise MtpOpExecFailureException(mtpRespCode, "Camera Command Failed: {:s}, Error: {:s}".format(getMtpOpDesc(mtpOp), getMtpRespDesc(mtpRespCode)))
 
@@ -328,14 +327,14 @@ def execMtpOp(s, mtpOp, cmdArgsPacked=six.binary_type(), dataToSend=six.binary_t
 				#
 				if totalDataTransferSizeBytesExpectedAcrossAllPayloads and len(dataReceivedSoFar) < totalDataTransferSizeBytesExpectedAcrossAllPayloads:
 					raise MtpProtocolException("Camera Protocol Error: {:s}: Data underrun (exp=0x{:08x}, got=0x{:08x})".format(\
-						getMtpOpDesc(mtpOp), totalDataTransferSizeBytesExpectedAcrossAllPayloads, len(dataReceivedSoFar[8:])))											
-					
+						getMtpOpDesc(mtpOp), totalDataTransferSizeBytesExpectedAcrossAllPayloads, len(dataReceivedSoFar[8:])))
+
 				return MtpTcpCmdResult(mtpRespCode, mtpResponseParameter, dataReceivedSoFar)
-				
+
 			else:
 				if isDebugLog():
 					applog_d("Unrecognized payload ID 0x{:x}. Data received:".format(payloadId))
-					applog_d(strutil.hexdump(data))				
+					applog_d(strutil.hexdump(data))
 				raise MtpProtocolException("Camera Networking Error: {:s}: Unrecognized payload ID (0x{:08x})".format(getMtpOpDesc(mtpOp), payloadId))
 
 		except (socket.error) as e:
@@ -348,25 +347,25 @@ def execMtpOp(s, mtpOp, cmdArgsPacked=six.binary_type(), dataToSend=six.binary_t
 					(rxTransactionId,) = struct.unpack('<I', data[4:8])
 					if rxTransactionId != txTransactionId:
 						raise MtpProtocolException("Camera Networking Error: {:s}: Incorrect transaction ID for data payload (exp={:08x}, got={:08x})".format(\
-							getMtpOpDesc(mtpOp), txTransactionId, rxTransactionId))								
+							getMtpOpDesc(mtpOp), txTransactionId, rxTransactionId))
 					dataReceivedSoFar += data[8:]
 					bytesReceivedLastPayload = len(data[8:])
 					lastPayloadExpectedSize = g_PartialRxDataPayloadData_SizeIndicated - 8
 				else:
 					bytesReceivedLastPayload = 0
 					lastPayloadExpectedSize = 0
-				
+
 				raise MtpOpExecFailureException(MTP_RESP_COMMUNICATION_ERROR, \
 					"{:s}: Socket error, partial data received - 0x{:x} of 0x{:x} bytes for specific payload, 0x{:x} of 0x{:x} of total data bytes expected. Error: {:s}".\
 						format(getMtpOpDesc(mtpOp), bytesReceivedLastPayload, lastPayloadExpectedSize, len(dataReceivedSoFar), totalDataTransferSizeBytesExpectedAcrossAllPayloads, str(e)),
-						dataReceivedSoFar, totalDataTransferSizeBytesExpectedAcrossAllPayloads)										
+						dataReceivedSoFar, totalDataTransferSizeBytesExpectedAcrossAllPayloads)
 
-		except KeyboardInterrupt as e: # <ctrl-c> pressed			
+		except KeyboardInterrupt as e: # <ctrl-c> pressed
 			gTransferInterruptedBySIGINT = True
 			applog_d("gTransferInterruptedBySIGINT set")
 			raise
-						
-			
+
+
 #
 # sends host introduction to camera (not sure what the spec calls this since it's not publicly documented.
 # this is the first operation performed after opening a TCP/IP socket with the camera. the camera returns
@@ -376,7 +375,7 @@ def sendInitCmdReq(s, guidHighLowTuple, hostNameStr, hostVerInt):
 	applog_d("sendInitCmdReq(): Sending MTP_TCPIP_REQ_INIT_CMD_REQ")
 	(guidHigh, guidLow) = guidHighLowTuple
 	cmdtype=struct.pack('<I', MTP_TCPIP_REQ_INIT_CMD_REQ)
-	guid = struct.pack('<QQ', guidHigh, guidLow) 
+	guid = struct.pack('<QQ', guidHigh, guidLow)
 	hostNameUtf16ByteArray = strutil.stringToUtf16ByteArray(hostNameStr, True)
 	try:
 		rxdata = txrxdata(s, cmdtype + guid + hostNameUtf16ByteArray + struct.pack('<I', hostVerInt))
@@ -420,10 +419,10 @@ def sendInitEvents(s, sessionId):
 			raise MtpProtocolException("sendInitEvents(): Bad response/ACK - expected 0x04, got 0x{:x}".format(wordResponse))
 	except socket.error as error:
 		raise
-		
+
 #
 # sends a probe request. this should be done on the events socket
-#		
+#
 def sendProbeRequest(s):
 	applog_d("sendProbeRequest(): Sending probe request")
 	cmdtype = struct.pack('<I', MTP_TCPIP_REQ_PROBE)
@@ -436,12 +435,12 @@ def sendProbeRequest(s):
 		if wordResponse != 0xe:	# make sure first 32-bit word is equal to a value of 0xe ("probe response")
 			raise MtpProtocolException("sendProbeRequest(): Bad response/ACK - expected 0x0e, got 0x{:x}".format(wordResponse))
 	except socket.error as error:
-		raise		
+		raise
 
-		
+
 #
 # opens TCP/IP socket to camera. this is the first step in communication
-#		
+#
 def openConnection(ipAddrStr, verbose, connectionTimeoutSecs=SOCKET_TIMEOUT_CONNECT_SECS_DEFAULT, readWriteTimeoutSecs=SOCKET_TIMEOUT_READS_WRITES_DEFAULT):
 	port = 15740
 	applog_d("openConnection(): Attempting connection to {:s}:{:d}".format(ipAddrStr, port))

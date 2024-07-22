@@ -15,8 +15,6 @@
 
 from __future__ import print_function
 from __future__ import division
-import six
-from six.moves import xrange
 import socket
 #from applog import *
 import struct
@@ -26,10 +24,10 @@ import sys
 import platform
 from applog import *
 
-#	
+#
 # ssdpTypeFromResponseStr() return values
 #
-SSDP_TYPE_NONE				= 0	
+SSDP_TYPE_NONE				= 0
 SSDP_TYPE_MSEARCH			= 1		# "M-SEARCH"
 SSDP_TYPE_NOTIFY			= 2		# "NOTIFY"
 SSDP_TYPE_RESPONSE			= 3		# "HTTP/1.1"
@@ -51,7 +49,7 @@ class DiscoverFailureException(Exception):
 		Exception.__init__(self, message)
 
 
-'''	
+'''
 
 Sample SSDP messages observed on tested cameras. All lines in an SSDP message are suffixed with \r\n.
 Some devices also have an empty line at the end of the message.
@@ -66,7 +64,7 @@ LOCATION: http://192.168.1.209:1900/DeviceDescription.xml
 NT: urn:microsoft-com:service:MtpNullService:1
 NTS: ssdp:alive
 SERVER: FedoraCore/2 UPnP/1.0 MINT-X/1.8.1
-USN: uuid:00000000-0001-0010-8000-98f17039c6fc::urn:microsoft-com:service:MtpNullService:1	
+USN: uuid:00000000-0001-0010-8000-98f17039c6fc::urn:microsoft-com:service:MtpNullService:1
 
 Sony A7s (unicast message to our M-SEARCH):
 ------------------------------------------------
@@ -146,14 +144,14 @@ def discover(serviceNameList, ssdpServiceVerifyOkCallback=None, numAttempts=3, t
 		'HOST: {}:{}',
 		'MAN: "ssdp:discover"',
 		'ST: {}','MX: 1','USER-AGENT: Windows/7.0/7.0','',''])
-		
+
 	if flags == None:
 		# no flags specified - decide best flags based on platform
 		if platform.system() == 'Windows':
 			flags = SSDP_DISCOVERF_CREATE_EXTRA_SOCKET_FOR_HOSTNAME_IF # Windows SSDP Discovery service
 		else:
 			flags = 0
-			
+
 	#
 	# we will be creating one or more sockets that will be used for sending SSDP multicasts
 	# and listening for a response
@@ -171,7 +169,7 @@ def discover(serviceNameList, ssdpServiceVerifyOkCallback=None, numAttempts=3, t
 		sockList.append(sock)
 	except socket.error as e:
 		raise DiscoverFailureException("Networking error preparing for SSDP Discovery: {:s}".format(str(e)))
-		
+
 	#
 	# create extra socket for the hostname interface if specified(Windows SSDP Discovery service workaruond)
 	#
@@ -186,10 +184,10 @@ def discover(serviceNameList, ssdpServiceVerifyOkCallback=None, numAttempts=3, t
 		except socket.error as e:
 			applog_w("Warning: Unable to prepare hostname socket for SSDP Discovery: {:s}".format(str(e)))
 			# let attempt continue since we have a primary socket to use
-			
+
 	#
 	# create additional sockets if specified
-	#	
+	#
 	if additionalMulticastInterfacesList:
 		for ipAddressStr in additionalMulticastInterfacesList:
 			try:
@@ -199,18 +197,18 @@ def discover(serviceNameList, ssdpServiceVerifyOkCallback=None, numAttempts=3, t
 					setUdpSocketForMulticastReceive(sock, group, ipAddressStr)
 				sockList.append(sock)
 			except socket.error as e:
-				raise DiscoverFailureException("Error creating additional socket for \"{:s}\": {:s}".format(ipAddressStr, str(e)))	
-			
-		
+				raise DiscoverFailureException("Error creating additional socket for \"{:s}\": {:s}".format(ipAddressStr, str(e)))
+
+
 	#
 	# loop for sending M-SEARCH messages and listening for unicasted responses/multicasted service advertisements
 	#
-	for nthAttempt in xrange(numAttempts):
-	
+	for nthAttempt in range(numAttempts):
+
 		try:
-		
+
 			timeStartThisAttempt = time.time()
-		
+
 			#
 			# send our M-SEARCH multicasts on each socket
 			#
@@ -218,10 +216,10 @@ def discover(serviceNameList, ssdpServiceVerifyOkCallback=None, numAttempts=3, t
 				for serviceNameStr in serviceNameList:
 					applog_d("SSDP TX broadcast[{:d}]: {:s}".format(sockIndex, serviceNameStr))
 					sock.sendto(message.format(group[0], group[1], serviceNameStr).encode(), group)
-			
-			#			
+
+			#
 			# listen for unicasted responses and/or multicasted service advertisements
-			#			
+			#
 			while True:
 				elapsedTimeThisAttemptSecs = time.time() - timeStartThisAttempt
 				if elapsedTimeThisAttemptSecs >= float(timeoutSecsPerAttempt):
@@ -232,7 +230,7 @@ def discover(serviceNameList, ssdpServiceVerifyOkCallback=None, numAttempts=3, t
 				# perform receive of queued data for all sockets with data available
 				for sock in socketsWithRxData:
 					ssdpMessageRaw = sock.recv(4096)
-					ssdpMessage = six.text_type(ssdpMessageRaw, 'utf-8')
+					ssdpMessage = str(ssdpMessageRaw, 'utf-8')
 					if ssdpMessage.startswith("M-SEARCH"):
 						# this is a search packet, either our own or someone else's - disregard
 						continue
@@ -249,21 +247,21 @@ def discover(serviceNameList, ssdpServiceVerifyOkCallback=None, numAttempts=3, t
 						if isMessageForService(ssdpMessage, serviceNameStr) and (ssdpServiceVerifyOkCallback == None or ssdpServiceVerifyOkCallback(ssdpMessage)):
 							# SSDP message is for a service caller wants and he optionally qualify it further - we're done
 							for sock in sockList:
-								sock.close()							
+								sock.close()
 							return ssdpMessage
 		except (socket.timeout, socket.error, select.error) as e:
 			# FYI, shouldn't see a socket.timeout since we're using select()
 			for sock in sockList:
-				sock.close()		
+				sock.close()
 			raise DiscoverFailureException("Network error during SSDP Discovery: {:s}".format(str(e)))
 
-				
+
 	#
 	# all attempts failed to discover a service the caller wanted
 	#
 	for sock in sockList:
 		sock.close()
-	return None	
+	return None
 
 
 def createUdpSocket(discoverFlags):
@@ -271,7 +269,7 @@ def createUdpSocket(discoverFlags):
 	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 31 if (discoverFlags & SSDP_DISCOVERF_USE_TTL_31) else 1)
 	return sock
-	
+
 #
 # prepares a UDP socket for multicast receives
 #
@@ -279,16 +277,16 @@ def setUdpSocketForMulticastReceive(sock, multicastGroupTuple, ipAddressStrOfMul
 	sock.bind(("", multicastGroupTuple[1]))
 	sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(multicastGroupTuple[0]) + socket.inet_aton(ipAddressStrOfMulticastInterface))
 
-	
+
 #
 # gets the IP address (as string) of local hostname
-#	
+#
 def getHostnameIpAddrStr():
 	ipAddrStr = socket.gethostbyname(socket.gethostname())
 	applog_d("getHostnameIpAddrStr(): " + ipAddrStr)
 	return ipAddrStr
-	
-	
+
+
 #
 # gets the contents of the specified header for a given SSDP advertise (NOTIFY) or response (HTTP/1.1) string
 #
@@ -298,8 +296,8 @@ def getHeader(ssdpMessage, headerNameStr):
 	# is case-sensitive, per the UPnP spec
 	#
 	if ssdpMessage == None:
-		return None					
-	headerNameStr = headerNameStr.upper() + ':'	
+		return None
+	headerNameStr = headerNameStr.upper() + ':'
 	messageLines = ssdpMessage.split('\n')
 	for line in messageLines:
 		line = line.lstrip()
@@ -307,10 +305,10 @@ def getHeader(ssdpMessage, headerNameStr):
 			return line[len(headerNameStr):].lstrip().rstrip()
 	return None
 
-	
+
 #
 # determines the type of an SSDP message
-# 	
+#
 def ssdpTypeFromMessage(ssdpMessage):
 	if ssdpMessage == None:
 		return None
@@ -325,18 +323,18 @@ def ssdpTypeFromMessage(ssdpMessage):
 
 
 #
-# determines if an SSDP advertise (NOTIFY) or response (HTTP/1.1) string is for a given service 
-#	
+# determines if an SSDP advertise (NOTIFY) or response (HTTP/1.1) string is for a given service
+#
 def isMessageForService(ssdpMessage, serviceNameStr):
 
 	ssdpType = ssdpTypeFromMessage(ssdpMessage)
-	
+
 	if ssdpType == SSDP_TYPE_MSEARCH:
 		# this is a search packet, either our own or someone else's - disregard
 		return False
-		
+
 	#
-	# if this is a NOTIFY (multicast advertising of service rather than 
+	# if this is a NOTIFY (multicast advertising of service rather than
 	# a unicast response to our M-SEARCH) then the message should include
 	# a notification status - make sure the status indicates that the
 	# service is available (ie,  SSD:ALIVE rather than SSDP:BYEBYE). Canon
@@ -345,7 +343,7 @@ def isMessageForService(ssdpMessage, serviceNameStr):
 	notificationStatus = getHeader(ssdpMessage, "nts")
 	if notificationStatus and notificationStatus.startswith("ssdp:alive") == False:
 		return False
-	
+
 	#
 	# check for both Notification Type (unicast response to our search request) and
 	# Service Type (unsolicited multicast advertising of service)
@@ -355,15 +353,15 @@ def isMessageForService(ssdpMessage, serviceNameStr):
 		typeContents = getHeader(ssdpMessage, "nt")
 		if typeContents == None:
 			return False
-			
+
 	if not typeContents.startswith(serviceNameStr):
 		return False
-		
+
 	return True
-	
+
 #
 # extracts the IP address from the "LOCATION:" header of an SSDP message
-#	
+#
 def extractIpAddressFromSSDPMessage(ssdpMessage):
 	# sample: http://192.168.1.209:1900/DeviceDescription.xml\n
 	locationStr = getHeader(ssdpMessage, "location")
@@ -391,8 +389,8 @@ def applog_i(str):
 	print(str)
 def applog_d(str):
 	print(str)
-	
-def testModule():	
+
+def testModule():
 	print("calling discover()")
 	resp = discover(["urn:microsoft-com:service:MtpNullService:1", "urn:schemas-canon-com:service:ICPO-SmartPhoneEOSSystemService:1" ],\
 		lambda (ssdpMessage) : extractIpAddressFromSSDPMessage(ssdpMessage) != None,
@@ -400,6 +398,6 @@ def testModule():
 	if resp:
 		print("Matched SSDP Message:\n" + resp)
 		ipAddress = extractIpAddressFromSSDPMessage(resp)
-		print("IP Address: " + ipAddress)	
+		print("IP Address: " + ipAddress)
 testModule()
 '''

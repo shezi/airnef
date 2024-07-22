@@ -23,9 +23,9 @@ This is a partial list of cameras that were tested. Even if your camera is not l
 | Canon 6D | Yes | Yes | Yes |
 
 
-<sup>1</sup>An easy way to tell if your camera supports Realtime Download is if it allows you to take photographs while its WiFi interface is enabled and in the mode required by Airmtp. For example most Nikon DSLRs support shooting with WiFi enabled. In contrast, Sony cameras (in the "Send to Computer" mode) and the Nikon J4/J5 require you to leave the WiFi mode before you can use the functionality of the camera again  
-<sup>2</sup>Nikon 1 cameras with built-in WiFi such as the J4 and J5 do not support Realtime download but can use staged realtime transfers  
-<sup>3</sup>Nikon bodies using an external WU-1a or WU-1b WiFi adapter have no separate menu option for selecting images to upload and the alternate mechanism of selecting images for upload in the playback menu (present in cameras with native WiFi support like the D7200) is unavailable because the playback menu is disabled when WiFi is on for cameras with an external WiFi adapter.  
+<sup>1</sup>An easy way to tell if your camera supports Realtime Download is if it allows you to take photographs while its WiFi interface is enabled and in the mode required by Airmtp. For example most Nikon DSLRs support shooting with WiFi enabled. In contrast, Sony cameras (in the "Send to Computer" mode) and the Nikon J4/J5 require you to leave the WiFi mode before you can use the functionality of the camera again
+<sup>2</sup>Nikon 1 cameras with built-in WiFi such as the J4 and J5 do not support Realtime download but can use staged realtime transfers
+<sup>3</sup>Nikon bodies using an external WU-1a or WU-1b WiFi adapter have no separate menu option for selecting images to upload and the alternate mechanism of selecting images for upload in the playback menu (present in cameras with native WiFi support like the D7200) is unavailable because the playback menu is disabled when WiFi is on for cameras with an external WiFi adapter.
 <sup>4</sup>Staged Realtime means the camera doesn't support taking photographs while in the WiFi mode required by Airmtp but you can achieve faux-realtime transfers by shooting any number of photos in non-WiFi mode then turning your camera's WiFi on to automatically transfer those images to Airmtp, then turn your camera's WiFi back off to resume shooting. You can repeat this any number of times while running a single Airmtp session (no intervention required on computer).
 
 
@@ -242,19 +242,19 @@ Sample Output: MyCamera_DSC_1125.NEF, JillsCamera_DSC_2535.NEF
 
 ## FAQ - Frequently Asked Questions
 
-Q: Sometimes during extended transfer sessions airmtpcmd reports a MTP_RESP_StoreNotAvailable error and exits. Why is that?  
+Q: Sometimes during extended transfer sessions airmtpcmd reports a MTP_RESP_StoreNotAvailable error and exits. Why is that?
 A: Cameras have a data-integrity mechanism that disables access to their SD/CF cards when the battery is low. This is done to prevent incomplete writes in case the battery charge runs out while the camera is writing to a card.
 
-Q: My camera has a WiFi option but it wont let me enable it (it's greyed out)  
+Q: My camera has a WiFi option but it wont let me enable it (it's greyed out)
 A: The mostly likely cause is low battery charge - for example Nikon bodies wont let you enable WiFi when the battery is low. There also might be a configuration setting in the camera that is incompatible with WiFi operation. On Nikon bodies the camera wont let you use WiFi when the HDMI port is in use.
 
-Q: I have a wired connection to my router and whenever I try to connect wirelessly to my camera Airmtp reports "A device at 192.1681.1.1 responded but the connection was refused. This is likely because you are connected to a normal WiFi network instead"  
+Q: I have a wired connection to my router and whenever I try to connect wirelessly to my camera Airmtp reports "A device at 192.1681.1.1 responded but the connection was refused. This is likely because you are connected to a normal WiFi network instead"
 A: The default IP address of most routers is 192.168.1.1, which unfortunately is also the default IP address of the wireless network created by Nikon cameras. Even though you have separate a wired connection to your router there can only be one device with a given IP address and so when you attempt to connect to your camera at 192.168.1.1 you'll be connecting to your router instead. Fortunately changing the IP address of your Nikon camera is easy - see the instructions here.
 
-Q: My wireless download performance is only half the 2 - 2.5 MB/s that Airmtp is quoted to achieve. I'm getting around 1 MB/s for my downloads.  
+Q: My wireless download performance is only half the 2 - 2.5 MB/s that Airmtp is quoted to achieve. I'm getting around 1 MB/s for my downloads.
 A: If your camera uses the wireless infrastructure mode then you'll need to use a wired connection to your router to achieve 2 MB/s. See details here.
 
-Q: Whenever airmtp runs it changes my camera's clock to the wrong time.  
+Q: Whenever airmtp runs it changes my camera's clock to the wrong time.
 A: Airmtp synchronizes the camera's clock to your system's UTC time. The time that the camera displays is then localized to the time zone and DST setting (Daylight Savings Time for USA) that you configured in the camera. If the camera's time zone and/or DST is not matched to your system's time zone/DST then the time will appear incorrect. If you'd prefer for Airmtp to not synchronize your camera's clock then add "---maxclockdeltabeforesync disablesync" (without the quotes) to the command line.
 
 ## Command Line Reference
@@ -1348,6 +1348,7 @@ For anyone interested in the ongoing progress of Airmtp development, there is a 
 
     airmtp - Wirelessly download images and movies from your Nikon Camera
     Copyright (C) 2015, testcams.com
+    Copyright (C) 2024, Johannes Spielmann <jps@shezi.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1378,4 +1379,3 @@ For anyone interested in the ongoing progress of Airmtp development, there is a 
 -   Camera Icon courtesy of
     '[Paomedia](https://www.iconfinder.com/icons/285680/camera_icon)',
     licensed under Creative Commons (Attribution 3.0 Unported)
-

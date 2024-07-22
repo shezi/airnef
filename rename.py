@@ -13,7 +13,6 @@
 
 from __future__ import print_function
 from __future__ import division
-import six
 import os
 import re
 import time
@@ -27,7 +26,7 @@ class GenerateReplacementNameException(Exception):
 
 #
 # converts a day of year (1-366) to a season string
-# 	
+#
 def dayOfYearToSeason(dayOfYear):
 	if dayOfYear >= 80 and dayOfYear < 172:
 		season = "Spring"
@@ -42,7 +41,7 @@ def dayOfYearToSeason(dayOfYear):
 
 #
 # verifies the syntax of a rename format string
-#	
+#
 def verifyRenameFormatStringSyntax(formatString):
 	renameDict = createTestRenameDict()
 	performRename(formatString, renameDict)
@@ -51,7 +50,7 @@ def verifyRenameFormatStringSyntax(formatString):
 #
 # gets the starting and ending character position of the next
 # specifier in the format string
-#	
+#
 def getNextSpecifierPos(formatString, formatStringPos):
 	nextSpecifierStartPos = formatString.find('@', formatStringPos)
 	if nextSpecifierStartPos == -1:
@@ -63,9 +62,9 @@ def getNextSpecifierPos(formatString, formatStringPos):
 	nextSpecifierEndPos = formatString.find('@', nextSpecifierStartPos+1)
 	if nextSpecifierEndPos == -1:
 		raise GenerateReplacementNameException("Missing specifier after @ at character #{:d}".format(nextSpecifierStartPos))
-		
+
 	return (nextSpecifierStartPos, nextSpecifierEndPos)
-	
+
 #
 # performs a rename operation
 #
@@ -74,12 +73,12 @@ def performRename(formatString, parmsDict):
 	#
 	# build dictionary that translates specifiers
 	#
-	
+
 	captureTimeStruct = time.localtime(parmsDict['captureDateEpoch'])
 	downloadTimeStruct = time.localtime(parmsDict['downloadDateEpoch'])
-	
+
 	specifierTranslationDict = dict()
-	
+
 	specifierTranslationDict['capturedate'] = time.strftime("%Y%m%d", captureTimeStruct)      	# date captured full (numeric)
 	specifierTranslationDict['capturedate_m'] = time.strftime("%m", captureTimeStruct)				# date captured month (numeric)
 	specifierTranslationDict['capturedate_d'] = time.strftime("%d", captureTimeStruct)				# date captured day (numeric)
@@ -94,7 +93,7 @@ def performRename(formatString, parmsDict):
 	specifierTranslationDict['capturetime_h'] = time.strftime("%H", captureTimeStruct)				# time captured hour (military)
 	specifierTranslationDict['capturetime_m'] = time.strftime("%M", captureTimeStruct)				# capure time minute
 	specifierTranslationDict['capturetime_s'] = time.strftime("%S", captureTimeStruct)				# time captured seconds
-	
+
 	specifierTranslationDict['dldate'] = time.strftime("%Y%m%d", downloadTimeStruct)      			# date downloaded full (numeric)
 	specifierTranslationDict['dldate_m'] = time.strftime("%m", downloadTimeStruct)					# date downloaded month (numeric)
 	specifierTranslationDict['dldate_d'] = time.strftime("%d", downloadTimeStruct)					# date downloaded day (numeric)
@@ -110,22 +109,22 @@ def performRename(formatString, parmsDict):
 	specifierTranslationDict['dltime_m'] = time.strftime("%M", downloadTimeStruct)					# capure time minute
 	specifierTranslationDict['dltime_s'] = time.strftime("%S", downloadTimeStruct)					# time downloaded seconds
 
-	specifierTranslationDict['filename'] = parmsDict['filename']									# local filename 
+	specifierTranslationDict['filename'] = parmsDict['filename']									# local filename
 	specifierTranslationDict['filename_root'] = os.path.splitext(parmsDict['filename'])[0]			# local filename base (filename without extension)
-	specifierTranslationDict['filename_ext'] = os.path.splitext(parmsDict['filename'])[1][1:]		# local filename extension	
-	specifierTranslationDict['capturefilename'] = parmsDict['capturefilename']						# capture filename 
+	specifierTranslationDict['filename_ext'] = os.path.splitext(parmsDict['filename'])[1][1:]		# local filename extension
+	specifierTranslationDict['capturefilename'] = parmsDict['capturefilename']						# capture filename
 	specifierTranslationDict['capturefilename_root'] = os.path.splitext(parmsDict['capturefilename'])[0]	# capture filename base (filename without extension)
 	specifierTranslationDict['capturefilename_ext'] = os.path.splitext(parmsDict['capturefilename'])[1][1:]	# capture filename extension
 	specifierTranslationDict['path'] = parmsDict['path']											# path
 	specifierTranslationDict['pf'] = os.path.join(parmsDict['path'], parmsDict['filename'])			# path+filename
-		
+
 	specifierTranslationDict['camerafolder'] = parmsDict['camerafolder']							# camera folder file is in
 	specifierTranslationDict['slotnumber'] = str(parmsDict['slotnumber'])							# camera media slot # file was downloaded from
 
 	specifierTranslationDict['cameramake'] = parmsDict['cameramake']								# camera make
 	specifierTranslationDict['cameramodel'] = parmsDict['cameramodel']								# camera model
 	specifierTranslationDict['cameraserial'] = parmsDict['cameraserial'] 							# camera serial number
-	
+
 	specifierTranslationDict['dlnum'] = "{:04d}".format(parmsDict['dlnum'])							# download number this session
 	specifierTranslationDict['dlnum_lifetime'] = "{:04d}".format(parmsDict['dlnum_lifetime'])		# download number lifetime for this model/serial
 
@@ -138,19 +137,19 @@ def performRename(formatString, parmsDict):
 		# find next specifier
 		#
 		(nextSpecifierStartPos, nextSpecifierEndPos) = getNextSpecifierPos(formatString, formatStringPos)
-	
+
 		if nextSpecifierStartPos == -1:
 			# no more specifiers - insert remainder of format string into output
 			outputName += formatString[formatStringPos:]
 			break;
-				
+
 		#
 		# insert from format string up to start of this specifier
 		#
 		outputName += formatString[formatStringPos:nextSpecifierStartPos]
-			
+
 		formatStringPos = nextSpecifierEndPos+1 # advance past specifier in preparation for next loop iteration
-		
+
 		#
 		# extract specifier to do replacment insertion. example specifier formats:
 		#	@filename@			- Filename
@@ -166,9 +165,9 @@ def performRename(formatString, parmsDict):
 		if not specifierWithArgs:
 			# found '@@', which means literal '@'
 			outputName += '@'
-			continue			
+			continue
 		specifierWithArgsLowercase = specifierWithArgs.lower()
-			
+
 		if specifierWithArgsLowercase.find('replace',0,7) != -1:
 			#
 			# special case specifier that does search/replace on output string built
@@ -183,25 +182,25 @@ def performRename(formatString, parmsDict):
 			if len(replaceList)==2:
 				raise GenerateReplacementNameException("No replacement string specified after specifier {:s} at character #{:d}".format(specifierForReporting, nextSpecifierStartPos))
 			if len(replaceList) > 3:
-				raise GenerateReplacementNameException("Too many fields for specifier {:s} at character #{:d}".format(specifierForReporting, nextSpecifierStartPos))			
-			if replaceList[0] == 'replace':				
+				raise GenerateReplacementNameException("Too many fields for specifier {:s} at character #{:d}".format(specifierForReporting, nextSpecifierStartPos))
+			if replaceList[0] == 'replace':
 				outputName = outputName.replace(replaceList[1], replaceList[2])
 			elif replaceList[0] == 'replacere':
 				outputName = re.sub(replaceList[1], replaceList[2], outputName)
 			else:
-				raise GenerateReplacementNameException("Unknown specifier {:s} at character #{:d}".format(specifierForReporting, nextSpecifierStartPos))			
+				raise GenerateReplacementNameException("Unknown specifier {:s} at character #{:d}".format(specifierForReporting, nextSpecifierStartPos))
 			continue
-		
+
 		specifierList = specifierWithArgs.split(':')
 		speciferName = specifierList[0]
 		specifierListLowercase = specifierWithArgsLowercase.split(':')
 		speciferNameLowercase = specifierListLowercase[0]
-								
+
 		if speciferNameLowercase not in specifierTranslationDict:
-			raise GenerateReplacementNameException("Unknown specifier {:s} at character #{:d}".format(specifierForReporting, nextSpecifierStartPos))		
+			raise GenerateReplacementNameException("Unknown specifier {:s} at character #{:d}".format(specifierForReporting, nextSpecifierStartPos))
 
 		if len(specifierListLowercase) > 4:
-			raise GenerateReplacementNameException("Too many subscripts to specifier {:s} at character #{:d}".format(specifierForReporting, nextSpecifierStartPos))		
+			raise GenerateReplacementNameException("Too many subscripts to specifier {:s} at character #{:d}".format(specifierForReporting, nextSpecifierStartPos))
 		specifierSubscript_Start = 0
 		specifierSubscript_End = 9999 # arbitrary large number to get all of string
 		if len(specifierListLowercase) >= 2:
@@ -220,9 +219,9 @@ def performRename(formatString, parmsDict):
 		if len(specifierListLowercase) >= 4:
 			if specifierListLowercase[3]:
 				optionsLowercase = specifierListLowercase[3]
-									
+
 		strToAdd = specifierTranslationDict[speciferNameLowercase][specifierSubscript_Start:specifierSubscript_End]
-		
+
 		# process options
 		if optionsLowercase.find('u') != -1:
 			# uppercase
@@ -233,11 +232,11 @@ def performRename(formatString, parmsDict):
 		if optionsLowercase.find('c') != -1:
 			# capitalize
 			strToAdd = strToAdd.capitalize()
-		
+
 		# add generated specifier output to string we're building
 		outputName += strToAdd
-		
-	return outputName	
+
+	return outputName
 
 
 #
@@ -249,7 +248,7 @@ def isSpecifierInFormatString(formatString, specifierName):
 	formatStringPos = 0
 	while formatStringPos < formatStringLen:
 		# find next specifier
-		(nextSpecifierStartPos, nextSpecifierEndPos) = getNextSpecifierPos(formatString, formatStringPos)	
+		(nextSpecifierStartPos, nextSpecifierEndPos) = getNextSpecifierPos(formatString, formatStringPos)
 		if nextSpecifierStartPos == -1:
 			return False
 		specifierWithArgs = formatString[nextSpecifierStartPos+1:nextSpecifierEndPos]		# the entire specifier with optional args included (everything between @@)
@@ -271,11 +270,11 @@ def createTestRenameDict():
 	renameDict['downloadDateEpoch'] = time.time()
 	renameDict['filename'] = "DSC_0014.sthumb.jpg"
 	renameDict['capturefilename'] = "DSC_0014.NEF"
-	renameDict['path'] = "c:\pics"
+	renameDict['path'] = "c:\\pics"
 	renameDict['camerafolder'] = "100D7200"
 	renameDict['slotnumber'] = 1
 	renameDict['captureDateEpoch'] = time.time()
-	renameDict['downloadDateEpoch'] = time.time()	
+	renameDict['downloadDateEpoch'] = time.time()
 	renameDict['cameramake'] = "Nikon"
 	renameDict['cameramodel'] = "D7200"
 	renameDict['cameraserial'] = "3434234"
@@ -302,8 +301,8 @@ def testModule():
 	print(performRename("camera make=@Cameramake@, model=@Cameramodel@, serial=@cameraserial@", renameDict))
 	print(performRename("download # this session @dlnum@, lifetime=@dlnum_lifetime@", renameDict))
 	print(performRename("camera make=@Cameramake:::c@@replace~Nikon~Canon@@replacere~Canon~Nikon@", renameDict))
-	
+
 	print(isSpecifierInFormatString("this is a test @first@ @second@ @cameramake:343:434@ of this routine", "cameramake"))
 	print(isSpecifierInFormatString("this is a test @first@ @second@ @cameramake@ of this routine@test@", "cameramakes"))
-	
+
 #testModule()
